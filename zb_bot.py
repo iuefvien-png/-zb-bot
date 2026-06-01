@@ -1,5 +1,4 @@
 import logging
-import asyncio
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 
@@ -8,7 +7,6 @@ ADMIN_ID = 898174079
 
 logging.basicConfig(level=logging.INFO)
 
-# States
 NAME, PHONE, ADDRESS, ITEMS, TIME, CONFIRM = range(6)
 
 MENU = """
@@ -140,7 +138,6 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await cancel(update, context)
     d = context.user_data
     user = update.message.from_user
-    # Notify admin
     admin_msg = (
         f"🔔 *НОВЫЙ ЗАКАЗ!*\n\n"
         f"👤 Клиент: {d['name']}\n"
@@ -152,13 +149,11 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 ID: {user.id}"
     )
     await context.bot.send_message(chat_id=ADMIN_ID, text=admin_msg, parse_mode="Markdown")
-    # Confirm to user
     keyboard = [["🛒 Сделать заказ"], ["🍓 Ассортимент", "📞 Контакты"]]
     await update.message.reply_text(
         "✅ *Заказ принят!*\n\n"
         "Мы свяжемся с вами в течение 15 минут для подтверждения.\n\n"
-        "🙏 Спасибо что выбрали *Z&B Fruits Co.*!\n"
-        "_Только лучшее — без компромиссов._",
+        "🙏 Спасибо что выбрали *Z&B Fruits Co.*!",
         parse_mode="Markdown",
         reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     )
@@ -183,7 +178,6 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     app = Application.builder().token(TOKEN).build()
-
     conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^🛒 Сделать заказ$"), order_start)],
         states={
@@ -196,15 +190,13 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.Regex("^🍓 Ассортимент$"), menu_cmd))
     app.add_handler(MessageHandler(filters.Regex("^📞 Контакты$"), contacts))
     app.add_handler(conv)
     app.add_handler(MessageHandler(filters.TEXT, unknown))
-
     print("✅ ZBFruitsBot запущен!")
-    app.run_polling()
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
